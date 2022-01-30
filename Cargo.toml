@@ -1,0 +1,28 @@
+[package]
+name = "acton"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Simon Rho <srho@juniper.net>" ]
+license = "MIT OR Apache-2.0"
+description = "A Rust API for ethernet over udp networking server and client implmentation."
+readme = "README.md"
+
+[dependencies]
+tokio = { version = "1.14.0", features = ["full"] }
+tokio-test = "0.4.2"
+bytes = "1.1.0"
+structopt = "0.3"
+log = "0.4"
+env_logger = "0.9"
+ctrlc = "3.2.1"
+libc = "0.2"
+eui48 = "1.0.1"
+ipaddress = "0.1.2"
+nom = "7.1.0"
+pnet = "0.29.0"
+netlink-packet-route = "0.10.0"
+rtnetlink = "0.9.0"
+hex = "0.4.3"
+
+[dev-dependencies]
+futures = "0.3"
