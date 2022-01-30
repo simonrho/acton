@@ -1,6 +1,6 @@
 //! # Acton
 //!
-//! `acton` provides a linux API for ethernet over udp networking using Rust.
+//! `acton` provides Rust APIs for ethernet over udp networking service.
 //!
 //! ## Examples
 //!
@@ -14,12 +14,13 @@
 //! In service, simple ethernet mac learning is implemented with mac forwarding table aging.
 //! The BUM (Broadcast, Unknown, Multicast) frame sent by server will be flooded to all clients.
 //! But local switch between clients is not allowed (P2MP forwarding manner).
-//! Proprietary control packets are defined and used for a session lifecycle management (hello and keepalive control packets)
+//! Proprietary control packets are defined and used for sessions lifecycle management (hello and keepalive control packets)
 //!
 //! ### Scaling
 //!
 //! 1,000 clients are tested (linux system resource limitation should be considered)
 //!
+//! ### Example
 //! ```rust,no_run
 //! use std::net::Ipv4Addr;
 //! use acton::server;
@@ -37,44 +38,44 @@
 //! 
 //! #[derive(StructOpt, Debug)]
 //! #[structopt(name = "acton")]
-//! //!/ Ethernet over TCP tunnel tools
+//! // Ethernet over TCP tunnel tools
 //! enum Opt {
-//!     //!/ server listen mode for L2 tunnel requests
+//!     // server listen mode for L2 tunnel requests
 //!     Server {
 //!         #[structopt(short, long, parse(try_from_str), default_value = "0.0.0.0", env = "SERVER_LISTEN_ADDRESS")]
-//!         //!/ server listen address
+//!         // server listen address
 //!         listen: Ipv4Addr,
 //!         #[structopt(short, long, default_value = "8080", env = "SERVER_LISTEN_PORT")]
-//!         //!/ server listen port
+//!         // server listen port
 //!         port: u16,
 //!         #[structopt(short, long, default_value = "server", env = "SERVER_TAP_NAME")]
-//!         //!/ tap interface name
+//!         // tap interface name
 //!         tap_name: PathBuf,
 //!         #[structopt(short, long, default_value = "00:00:00:00:00:00", env = "SERVER_TAP_MAC", parse(try_from_str=parse_mac))]
-//!         //!/ tap mac address (xx:xx:xx:xx:xx:xx)
+//!         // tap mac address (xx:xx:xx:xx:xx:xx)
 //!         mac: MacAddress,
 //!         #[structopt(short, long, default_value = "0.0.0.0/0", env = "CLIENT_TAP_NETWORK", parse(try_from_str=parse_ip))]
-//!         //!/ tap ip network (a.b.c.d/n)
+//!         // tap ip network (a.b.c.d/n)
 //!         address: IPAddress,
 //!     },
 //! 
 //!     #[structopt(after_help = "Beware `-d`, interoperable with socat command")]
-//!     //!/ client connect mode for L2 tunnel establishment
+//!     // client connect mode for L2 tunnel establishment
 //!     Client {
 //!         #[structopt(parse(try_from_str), env = "CLIENT_SERVER_ADDRESS")]
-//!         //!/ server destination address
+//!         // server destination address
 //!         server: Ipv4Addr,
 //!         #[structopt(short, long, default_value = "8080", env = "CLIENT_SERVER_PORT")]
-//!         //!/ server destination port
+//!         // server destination port
 //!         port: u16,
 //!         #[structopt(short, long, default_value = "client", env = "CLIENT_TAP_NAME")]
-//!         //!/ tap interface name
+//!         // tap interface name
 //!         tap_name: PathBuf,
 //!         #[structopt(short, long, default_value = "00:00:00:00:00:00", env = "CLIENT_TAP_MAC", parse(try_from_str=parse_mac))]
-//!         //!/ tap mac address (xx:xx:xx:xx:xx:xx)
+//!         // tap mac address (xx:xx:xx:xx:xx:xx)
 //!         mac: MacAddress,
 //!         #[structopt(short, long, default_value = "0.0.0.0/0", env = "CLIENT_TAP_NETWORK", parse(try_from_str=parse_ip))]
-//!         //!/ tap ip network (a.b.c.d/n)
+//!         // tap ip network (a.b.c.d/n)
 //!         address: IPAddress,
 //!     },
 //! }

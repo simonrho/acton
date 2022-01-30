@@ -6,6 +6,9 @@ authors = [ "Simon Rho <srho@juniper.net>" ]
 license = "MIT OR Apache-2.0"
 description = "A Rust API for ethernet over udp networking server and client implmentation."
 readme = "README.md"
+repository = "https://github.com/simonrho/acton"
+keywords = ["networking", "ethernet", "tunnel", "ip", "vpn"]
+categories = ["network-programming"]
 
 [dependencies]
 tokio = { version = "1.14.0", features = ["full"] }

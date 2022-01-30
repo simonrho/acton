@@ -1,3 +1,8 @@
+//! Ethernet over udp server implementation
+//!
+//! Mac learning and session management are supported.
+//! P2MP based traffic handling - not allowed the local switch between clients.
+
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UdpSocket;
 use tokio::runtime::Runtime;
@@ -45,14 +50,14 @@ use crate::linuxtap::LinuxTapInterface;
 /// use acton::linuxinterface::raw_interface;
 /// use acton::{control, server};
 /// Runtime::new().unwrap().block_on(async {
-///     let tap_name = "tap-server";
+///     let tap_name = "tap-server1";
 /// 
 ///     // start server
 ///     tokio::spawn(async move {
 ///         server::server(
 ///             "127.0.0.1:8080",
 ///             tap_name.clone(),
-///             MacAddress::from_str("00:01:02:03:04:05").unwrap(),
+///             MacAddress::from_str("00:01:02:03:04:51").unwrap(),
 ///             ipaddress::ipv4::new("1.2.3.1/24").unwrap(),
 ///             true,
 ///         ).await.unwrap();
@@ -62,7 +67,7 @@ use crate::linuxtap::LinuxTapInterface;
 ///     sleep(Duration::from_secs(1)).await;
 /// 
 ///     // bind raw interface for tap interface input/output validation
-///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone());
+///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone(), true);
 /// 
 /// 
 ///     const NUM_OF_CLIENTS: usize = 100;
@@ -321,7 +326,176 @@ pub async fn server(listen_addr: &str, tap_name: &str, mac: MacAddress, tap_netw
     Ok(())
 }
 
-
+/// Wrapper function to run ethernet p2mp tunnel over ip server.
+///
+/// # Arguments
+///
+/// * `listen_addr` - server listen address:port str.
+/// * `tap_name` - name of tap interface that will be created.
+/// * `mac` - tap interface mac.
+/// * `tap_network_address` - tap interface ip network.
+/// * `ipv6_filter` - filter any ipv6 packet at tap interface input path (mainly for unit/doc test purpose)
+///
+/// # Example
+/// ```
+/// use std::net::SocketAddr;
+/// use std::str::FromStr;
+/// use std::thread;
+/// use std::time::Duration;
+///
+/// use tokio::runtime::Runtime;
+/// use tokio::time::sleep;
+/// use tokio::net::UdpSocket;
+///
+/// use eui48::MacAddress;
+/// use ipaddress;
+///
+/// use hex;
+/// use nom::{AsBytes, HexDisplay};
+///
+/// use acton::linuxinterface::raw_interface;
+/// use acton::{control, server};
+///
+/// let runtime = Runtime::new().unwrap();
+/// runtime.block_on(async {
+///     let tap_name = "tap-server2";
+///
+///     // start server
+///     thread::spawn( move || {
+///         server::main(
+///             "127.0.0.1:8081",
+///             tap_name.clone(),
+///             MacAddress::from_str("00:01:02:03:04:52").unwrap(),
+///             ipaddress::ipv4::new("1.2.3.2/24").unwrap(),
+///             true,
+///         );
+///     });
+///
+///     // wait for server running...
+///     sleep(Duration::from_secs(1)).await;
+///
+///     // bind raw interface for tap interface input/output validation
+///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone(), true);
+///
+///
+///     const NUM_OF_CLIENTS: usize = 100;
+///
+///     let ref mut client_sockets: Vec<UdpSocket> = Vec::new();
+///
+///     //
+///     // clients -> server: session creation & unicast path check
+///     //
+///     println!("[Client to Server path check]");
+///     let ref mut sent_packets: Vec<bytes::Bytes> = Vec::new();
+///
+///     // client session emulation
+///     for i in 0..NUM_OF_CLIENTS {
+///         let remote_addr = "127.0.0.1:8081".parse::<SocketAddr>().unwrap();
+///         let local_addr = "0.0.0.0:0".parse::<SocketAddr>().unwrap();
+///
+///         let socket = UdpSocket::bind(local_addr).await.unwrap();
+///         socket.connect(&remote_addr).await.unwrap();
+///
+///         /// the hello packet for client session creation on server
+///         socket.send(control::HELLO_PACKET).await.unwrap();
+///
+///         client_sockets.push(socket);
+///     }
+///
+///     // clients -> server: unicast packet sent
+///     for i in 0..NUM_OF_CLIENTS {
+///         let packet = hex::decode(format!("0001223344550001aabb{:04x}1234c0ff", i)).unwrap();
+///         let packet = bytes::Bytes::from(packet);
+///
+///         client_sockets[i].send(packet.clone().as_bytes()).await.unwrap();
+///         println!("CLIENT TX packet{}:\n{}", i, packet.to_hex(16));
+///
+///         sent_packets.push(packet);
+///     }
+///
+///     // validate unicast packet arrival @ server
+///     for i in 0..NUM_OF_CLIENTS {
+///         let packet = port_rx.recv().await.unwrap();
+///
+///         assert_eq!(packet, sent_packets[i]);
+///
+///         println!("SERVER RX packet{}:\n{}", i, packet.to_hex(16));
+///     }
+///
+///     //
+///     // server -> clients: broadcast path check
+///     //
+///     println!("[Server to client broadcast path check]");
+///     let broadcast_packet = hex::decode("ffffffffffff0001aaaaaaff4321c0ff").unwrap();
+///     let broadcast_packet = bytes::Bytes::from(broadcast_packet);
+///     let _ = port_tx.send(broadcast_packet.clone()).await;
+///
+///     println!("sent broadcast packet to clients:\n{}", broadcast_packet.to_hex(16));
+///
+///     /// check if broadcast packet arrives at each client?
+///     let mut buf = [0u8; 2000];
+///     for i in 0..NUM_OF_CLIENTS {
+///         let n = client_sockets[i].recv(&mut buf).await.unwrap();
+///         let packet = &buf[0..n];
+///
+///         assert_eq!(packet, broadcast_packet);
+///
+///         println!("CLIENT RX broadcast packet{}:\n{}", i, packet.to_hex(16));
+///     }
+///
+///     //
+///     // server -> clients: unknown destination mac fooding to all clients
+///     //
+///     println!("[Server to client broadcast path check]");
+///     let unknown_mac_packet = hex::decode("000111aa22bb0001aaaaaaff4321c0ff").unwrap();
+///     let broadcast_packet = bytes::Bytes::from(unknown_mac_packet);
+///     let _ = port_tx.send(broadcast_packet.clone()).await;
+///
+///     println!("sent broadcast packet to clients:\n{}", broadcast_packet.to_hex(16));
+///
+///     // check if broadcast packet arrives at each client?
+///     let mut buf = [0u8; 2000];
+///     for i in 0..NUM_OF_CLIENTS {
+///         let n = client_sockets[i].recv(&mut buf).await.unwrap();
+///         let packet = &buf[0..n];
+///
+///         assert_eq!(packet, broadcast_packet);
+///
+///         println!("CLIENT RX broadcast packet{}:\n{}", i, packet.to_hex(16));
+///     }
+///
+///     //
+///     // server -> clients: unicast path check
+///     //
+///     println!("[Server to client unicast path check]");
+///     let ref mut sent_packets: Vec<bytes::Bytes> = Vec::new();
+///
+///     // server -> clients: unicast packet sent
+///     for i in 0..NUM_OF_CLIENTS {
+///         let unicast_packet = hex::decode(format!("0001aabb{:04x}0001aaaaaaff4321c0ff", i)).unwrap();
+///         let unicast_packet = bytes::Bytes::from(unicast_packet);
+///
+///         let _ = port_tx.send(unicast_packet.clone()).await;
+///         println!("SERVER TX packet{}:\n{}", i, unicast_packet.to_hex(16));
+///
+///         sent_packets.push(unicast_packet);
+///     }
+///
+///     // validate if unicast packet sent from server arrives @ each client
+///     let mut buf = [0u8; 2000];
+///     for i in 0..NUM_OF_CLIENTS {
+///         let n = client_sockets[i].recv(&mut buf).await.unwrap();
+///         let packet = bytes::Bytes::copy_from_slice(&buf[..n]);
+///
+///         assert_eq!(packet, sent_packets[i]);
+///
+///         println!("CLIENT RX packet{}:\n{}", i, packet.to_hex(16));
+///     }
+///
+///     println!("...done...");
+/// });
+/// runtime.shutdown_timeout(Duration::from_secs(0));
+/// ```
 pub fn main(listen_addr: &str, tap_name: &str, mac: MacAddress, tap_network_address: IPAddress, ipv6_filter: bool) {
     let runtime = Runtime::new().unwrap();
     let _ = runtime.block_on(server(listen_addr, tap_name, mac, tap_network_address, ipv6_filter));

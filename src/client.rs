@@ -1,3 +1,6 @@
+//! Ethernet over udp client implementation
+//!
+
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UdpSocket;
 use tokio::runtime::Runtime;
@@ -51,7 +54,7 @@ use crate::linuxtap::LinuxTapInterface;
 ///
 /// Runtime::new().unwrap().block_on(async {
 ///     tokio::spawn(async move {
-///         let socket = UdpSocket::bind("127.0.0.1:8080").await.unwrap();
+///         let socket = UdpSocket::bind("127.0.0.1:9090").await.unwrap();
 ///         let buf = &mut [0u8; 2000];
 ///         loop {
 ///             let (n, client_addr) = socket.recv_from(buf).await.unwrap();
@@ -63,9 +66,9 @@ use crate::linuxtap::LinuxTapInterface;
 ///
 ///     tokio::spawn(async move {
 ///         client::client(
-///             "127.0.0.1:8080",
+///             "127.0.0.1:9090",
 ///             tap_name.clone(),
-///             MacAddress::from_str("00:01:02:03:04:05").unwrap(),
+///             MacAddress::from_str("00:01:02:03:04:a5").unwrap(),
 ///             ipaddress::ipv4::new("1.2.3.4/24").unwrap(),
 ///             true,
 ///         ).await.unwrap();
@@ -73,7 +76,7 @@ use crate::linuxtap::LinuxTapInterface;
 ///
 ///     sleep(Duration::from_secs(1)).await;
 ///
-///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone());
+///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone(), true);
 ///
 ///     let packet1 = hex::decode("ffffffffffff4a60b989d99a080600010800060400014a60b989d99a0102030400000000000001020305").unwrap();
 ///     let packet1 = bytes::Bytes::from(packet1);
@@ -256,9 +259,10 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
 /// use eui48::{MacAddress, ParseError};
 /// use ipaddress::IPAddress;
 ///
-/// Runtime::new().unwrap().block_on(async {
+/// let runtime = Runtime::new().unwrap();
+/// runtime.block_on(async {
 ///     tokio::spawn(async move {
-///         let socket = UdpSocket::bind("127.0.0.1:9090").await.unwrap();
+///         let socket = UdpSocket::bind("127.0.0.1:9091").await.unwrap();
 ///         let buf = &mut [0u8; 2000];
 ///         loop {
 ///             let (n, client_addr) = socket.recv_from(buf).await.unwrap();
@@ -270,17 +274,17 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
 ///
 ///     thread::spawn( move || {
 ///         client::main(
-///             "127.0.0.1:9090",
+///             "127.0.0.1:9091",
 ///             tap_name.clone(),
-///             MacAddress::from_str("00:01:02:03:04:06").unwrap(),
-///             ipaddress::ipv4::new("1.2.3.5/24").unwrap(),
+///             MacAddress::from_str("00:01:02:03:04:a6").unwrap(),
+///             ipaddress::ipv4::new("1.2.4.5/24").unwrap(),
 ///             true,
 ///         );
 ///     });
 ///
 ///     sleep(Duration::from_secs(1)).await;
 ///
-///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone());
+///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone(), true);
 ///
 ///     let packet1 = hex::decode("ffffffffffff4a60b989d99a080600010800060400014a60b989d99a0102030400000000000001020305").unwrap();
 ///     let packet1 = bytes::Bytes::from(packet1);
@@ -295,6 +299,7 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
 ///
 ///     println!("...done...");
 /// });
+/// runtime.shutdown_timeout(Duration::from_secs(0));
 /// ```
 pub fn main(server_address: &str, tap_name: &str, mac: MacAddress, tap_network_address: IPAddress, ipv6_filter: bool) {
     let runtime = Runtime::new().unwrap();

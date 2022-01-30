@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use eui48::{MacAddress, ParseError};
 use ipaddress::IPAddress;
-`
+
 #[macro_use]
 extern crate log;
 

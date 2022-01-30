@@ -1,11 +1,20 @@
+//! Linux raw interface binding to send/receive raw ethernet frames
+//!
+
 use pnet::datalink::{Channel, NetworkInterface};
 
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 use bytes;
+use nom::HexDisplay;
 
 /// Bind interface to socket and return tx/tx channel to send/receive packet from interface.
+///
+/// # Arguments
+///
+/// * `name` -  interface name
+/// * `ipv6_filter` - filter any ipv6 packet at tap interface input path (mainly for unit/doc test purpose)
 ///
 /// # Example
 /// ```
@@ -24,29 +33,29 @@ use bytes;
 ///
 /// Runtime::new().unwrap().block_on(async {
 ///     let tap_name = "tap1234-raw";
-///  
+///
 ///     //  create tap interface
 ///     let mut tap = LinuxTapInterface::new(tap_name).await.unwrap();
 ///     tap.set_up();
 ///     let (tap_tx, tap_rx) = tap.get_file();
-///  
-///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone());
-///  
+///
+///     let (_interface, port_tx, mut port_rx) = raw_interface(tap_name.clone(), true);
+///
 ///     let packet1 = hex::decode("ffffffffffff4a60b989d99a080600010800060400014a60b989d99a0102030400000000000001020305").unwrap();
 ///     let _ = tap_tx.write_all(packet1.as_slice()).await;
-///  
+///
 ///     let packet2 = port_rx.recv().await.unwrap();
-///  
+///
 ///     println!("packet1:\n{}", packet1.to_hex(16));
 ///     println!("packet2:\n{}", packet2.to_hex(16));
-///  
+///
 ///     assert_eq!(packet1, packet2);
-///  
+///
 ///     let packet1 = bytes::Bytes::from(packet1);
 ///     port_tx.send(packet1.clone()).await.unwrap();
-///  
+///
 ///     let buf = &mut [0u8; 2000];
-///  
+///
 ///     loop {
 ///         select! {
 ///             n = tap_rx.read(buf) => match n {
@@ -60,11 +69,11 @@ use bytes;
 ///             _ = sleep(Duration::from_secs(3)) => panic!("timeout")
 ///         }
 ///     }
-///  
+///
 ///     println!("...done...");
 /// });
 /// ```
-pub fn raw_interface(name: &str) -> (NetworkInterface, Sender<bytes::Bytes>, Receiver<bytes::Bytes>) {
+pub fn raw_interface(name: &str, ipv6_filter: bool) -> (NetworkInterface, Sender<bytes::Bytes>, Receiver<bytes::Bytes>) {
     let interfaces = pnet::datalink::interfaces();
     let interface = interfaces
         .into_iter()
@@ -85,7 +94,13 @@ pub fn raw_interface(name: &str) -> (NetworkInterface, Sender<bytes::Bytes>, Rec
     tokio::task::spawn_blocking(move || {
         loop {
             let packet = match receiver.next() {
-                Ok(packet) => packet,
+                Ok(packet) => {
+                    if ipv6_filter && packet[12..14] == [0x86, 0xdd] {
+                        trace!("[filter ipv6 packet]\n{}", packet.to_hex(16));
+                        continue
+                    }
+                    packet
+                },
                 Err(e) => {
                     println!("ERROR: raw_interface: {:?}", e);
                     break;

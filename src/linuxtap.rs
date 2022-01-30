@@ -755,7 +755,7 @@ impl LinuxTapInterface {
     ///     tap.set_up();
     ///
     ///
-    ///     let (interface, mut port_tx, mut port_rx) = raw_interface(tap_name.clone());
+    ///     let (interface, mut port_tx, mut port_rx) = raw_interface(tap_name.clone(), true);
     ///     // loop tap interface
     ///     tokio::spawn(async move {
     ///         loop {

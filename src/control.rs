@@ -14,22 +14,30 @@ pub const MAX_FRAME_SIZE: usize = 1024 * 9;
 /// as a control packet.(HELLO, KEEPALIVE, BYE, and so on)
 pub const MIN_FRAME_SIZE: usize = 14;
 
-pub const BROADCAST_MAC_ADDRESS: u64 = 0xffff_ffff_ffff;
-pub const MULTICAST_MAC_PREFIX_V4: u64 = 0x0100_5e00_0000;
-pub const MULTICAST_MAC_PREFIX_V6: u64 = 0x3333_0000_0000;
-pub const MULTICAST_MAC_ADDRESS_MASK_V4: u64 = 0xffff_ff80_0000;
-pub const MULTICAST_MAC_ADDRESS_MASK_V6: u64 = 0xffff_0000_0000;
+const BROADCAST_MAC_ADDRESS: u64 = 0xffff_ffff_ffff;
+const MULTICAST_MAC_PREFIX_V4: u64 = 0x0100_5e00_0000;
+const MULTICAST_MAC_PREFIX_V6: u64 = 0x3333_0000_0000;
+const MULTICAST_MAC_ADDRESS_MASK_V4: u64 = 0xffff_ff80_0000;
+const MULTICAST_MAC_ADDRESS_MASK_V6: u64 = 0xffff_0000_0000;
 
+/// Max allowed mac entries count
 pub const MAX_MAC_COUNT: usize = 32_000;
+/// Max allowed clients count
 pub const MAX_NEXTHOP_COUNT: usize = 3000;
+/// Max mac entry aging timeout
 pub const MAX_MAC_AGING_TIMEOUT: u64 = 600; // 5 minutes
-
+/// Session keepalive timeout
 pub const KEEPALIVE_TIMEOUT: u64 = 30;
+/// Session keepalive interval
 pub const KEEPALIVE_INTERVAL: u64 = 10;
+/// Session keepalive control packet data
 pub const KEEPALIVE_PACKET: &[u8] = "KEEPALIVE".as_bytes();
+/// Session hello control packet data for client registration
 pub const HELLO_PACKET: &[u8] = "HELLO".as_bytes();
+/// Session bye control packet data for client registration
 pub const BYE_PACKET: &[u8] = "BYE".as_bytes();
 
+/// Error code type for client and server tasks
 pub type Error = Box<dyn std::error::Error + Sync + Send>;
 type MacValue = u64;
 
@@ -121,7 +129,7 @@ impl MacAddress {
 
 #[derive(Debug)]
 /// Forwarding next-hop is composed of remote socket address including port number and timestamp
-/// of an entry creation time.
+/// of entries creation time.
 pub struct NextHop {
     addr: SocketAddr,
     expiry_time: Instant,
@@ -293,7 +301,7 @@ impl ForwardingTable {
     }
 
 
-    /// Update the expiry timestamp of an existing socket session or create a new socket session.
+    /// Update the expiry timestamp of existing socket sessions or create a new socket session.
     ///
     /// # Example
     /// ```
