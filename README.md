@@ -21,9 +21,9 @@ Proprietary control packets are defined and used for a session lifecycle managem
 
 1,000 clients are tested (linux system resource limitation should be considered)
 
-### Install
+### How to Install
 ```shell
-wget https://raw.githubusercontent.com/simonrho/acton/main/target/release/examples/acton; chmod +x ./acton
+wget https://github.com/simonrho/acton/raw/main/target/release/examples/acton; chmod +x ./acton
 ```
 
 ### How to Use
