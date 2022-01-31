@@ -25,7 +25,7 @@ pub const MAX_MAC_COUNT: usize = 32_000;
 /// Max allowed clients count
 pub const MAX_NEXTHOP_COUNT: usize = 3000;
 /// Max mac entry aging timeout
-pub const MAX_MAC_AGING_TIMEOUT: u64 = 600; // 5 minutes
+pub const MAX_MAC_AGING_TIMEOUT: u64 = 600; // 10 minutes
 /// Session keepalive timeout
 pub const KEEPALIVE_TIMEOUT: u64 = 30;
 /// Session keepalive interval
