@@ -23,7 +23,7 @@ Proprietary control packets are defined and used for a session lifecycle managem
 
 ### How to Install
 ```shell
-wget https://github.com/simonrho/acton/raw/main/acton; chmod +x sudo ./acton
+wget https://raw.githubusercontent.com/simonrho/acton/main/target/release/examples/acton; chmod +x ./acton
 ```
 
 ### How to Use
