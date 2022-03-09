@@ -14,7 +14,7 @@ use env_logger::Env;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "acton")]
-/// Ethernet over TCP tunnel tools
+/// Ethernet over UDP tunnel tools
 enum Opt {
     /// server listen mode for L2 tunnel requests
     Server {
