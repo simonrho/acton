@@ -35,7 +35,6 @@ enum Opt {
         address: IPAddress,
     },
 
-    #[structopt(after_help = "Beware `-d`, interoperable with socat command")]
     /// client connect mode for L2 tunnel establishment
     Client {
         #[structopt(parse(try_from_str), env = "CLIENT_SERVER_ADDRESS")]

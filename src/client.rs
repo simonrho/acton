@@ -6,6 +6,7 @@ use tokio::net::UdpSocket;
 use tokio::runtime::Runtime;
 use tokio::time;
 use tokio::signal;
+use tokio::time::sleep;
 
 use std::{net::SocketAddr};
 use std::process::exit;
@@ -160,7 +161,7 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
     let mut keeplive_elapsed_time: u64 = 0;
     let mut tick: u64 = 0;
 
-    trace!("send 1st HELLO_PACKET: {:?}", remote_addr);
+    info!("send 1st HELLO_PACKET: {:?}", remote_addr);
     let _ = socket.send(control::HELLO_PACKET).await;
 
     loop {
@@ -221,6 +222,9 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
             _ = signal::ctrl_c() => {
                 let _ = socket.send(control::BYE_PACKET).await;
                 info!("Close session");
+
+                sleep(Duration::from_secs(1)).await;
+
                 break;
             }
         }
