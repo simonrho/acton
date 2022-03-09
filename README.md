@@ -31,7 +31,7 @@ wget https://github.com/simonrho/acton/raw/main/target/release/examples/acton; c
 ```shell
 root@r1:~/acton# ./acton
 acton 0.1.0
-Ethernet over TCP tunnel tools
+Ethernet over UDP tunnel tools
 
 USAGE:
     acton <SUBCOMMAND>
