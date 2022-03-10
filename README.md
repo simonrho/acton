@@ -29,7 +29,7 @@ wget https://raw.githubusercontent.com/simonrho/acton/main/target/release/exampl
 ### How to Use
 
 ```shell
-poc@r1:~/acton# sudo ./acton
+poc@r1:~/acton$ sudo ./acton
 acton 0.1.0
 Ethernet over UDP tunnel tools
 
@@ -47,7 +47,7 @@ SUBCOMMANDS:
 ```
 #### Running server
 ```shell
-poc@r1:~/acton# sudo ./acton server --help
+poc@r1:~/acton$ sudo ./acton server --help
 acton-server 0.1.0
 server listen mode for L2 tunnel requests
 
@@ -65,15 +65,15 @@ OPTIONS:
                                  00:00:00:00:00:00]
     -p, --port <port>            server listen port [env: SERVER_LISTEN_PORT=]  [default: 8080]
     -t, --tap-name <tap-name>    tap interface name [env: SERVER_TAP_NAME=]  [default: server]
-poc@r1:~/acton#
-poc@r1:~/acton# sudo ./acton server -m 00:01:02:03:04:05 -a 100.0.0.1/24
+poc@r1:~/acton$
+poc@r1:~/acton$ sudo ./acton server -m 00:01:02:03:04:05 -a 100.0.0.1/24
 [2022-01-30T10:35:24Z INFO  acton::server] server starts!
 
 ```
 
 #### Running client
 ```shell
-poc@r2:~/acton# sudo ./acton client -h
+poc@r2:~/acton$ sudo ./acton client -h
 acton-client 0.1.0
 client connect mode for L2 tunnel establishment
 
@@ -95,14 +95,14 @@ ARGS:
     <server>    server destination address [env: CLIENT_SERVER_ADDRESS=]
 
 Beware `-d`, interoperable with socat command
-poc@r2:~/acton# sudo ./acton client 192.168.99.11 -a 100.0.0.2/24 -t client -m 00:02:03:04:05:06
+poc@r2:~/acton$ sudo ./acton client 192.168.99.11 -a 100.0.0.2/24 -t client -m 00:02:03:04:05:06
 [2022-01-30T10:38:10Z INFO  acton::client] client starts
 [2022-01-30T10:38:10Z INFO  acton::client] connected: 192.168.99.11:8080
 ```
 
 #### ping test
 ```shell
-poc@r2:~/acton# ping 100.0.0.1
+poc@r2:~/acton$ ping 100.0.0.1
 PING 100.0.0.1 (100.0.0.1) 56(84) bytes of data.
 64 bytes from 100.0.0.1: icmp_seq=1 ttl=64 time=0.971 ms
 64 bytes from 100.0.0.1: icmp_seq=2 ttl=64 time=0.990 ms
@@ -114,5 +114,5 @@ PING 100.0.0.1 (100.0.0.1) 56(84) bytes of data.
 --- 100.0.0.1 ping statistics ---
 6 packets transmitted, 6 received, 0% packet loss, time 5064ms
 rtt min/avg/max/mdev = 0.875/1.027/1.222/0.105 ms
-poc@r2:~/acton#
+poc@r2:~/acton$
 ```
