@@ -224,7 +224,7 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
 
                 if is_connecred == false {
                     if tick % control::HELLO_INTERVAL == 0 {
-                        error!("no hello response from server -> send hello again to {:?}", remote_addr);
+                        info!("no hello response from server -> send hello again to {:?}", remote_addr);
                         let _ = socket.send(control::HELLO_PACKET).await;
                     }
 
