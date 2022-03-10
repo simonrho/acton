@@ -152,18 +152,20 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
     let socket = UdpSocket::bind(local_addr).await?;
     socket.connect(&remote_addr).await?;
 
-    info!("connected: {:?}", remote_addr);
+    info!("connecting: {:?}", remote_addr);
 
     let mut buf_tap = [0u8; control::MAX_FRAME_SIZE];
     let mut buf_sock = [0u8; control::MAX_FRAME_SIZE];
 
     let mut interval = time::interval(Duration::from_secs(1));
+    let mut hello_elapsed_time: u64 = 0;
     let mut keeplive_elapsed_time: u64 = 0;
     let mut tick: u64 = 0;
 
-    info!("send 1st HELLO_PACKET: {:?}", remote_addr);
+    trace!("send 1st HELLO_PACKET and waiting...: {:?}", remote_addr);
     let _ = socket.send(control::HELLO_PACKET).await;
 
+    let mut is_connecred = false;
     loop {
         tokio::select! {
             n = tap_rx.read(&mut buf_tap) => match n {
@@ -190,8 +192,22 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
             n = socket.recv(&mut buf_sock) => match n {
                 Ok(n) => {
                     if n < control::MIN_FRAME_SIZE {
-                        trace!("Keepalive arrives and reset keepalive_elasped_time");
-                        keeplive_elapsed_time = 0;
+                        let data = &buf_sock[0..n];
+
+                        if data == control::HELLO_PACKET {
+                            trace!("HELLO_PACKET arrives: {:?}", remote_addr);
+                            info!("connected: {:?}", remote_addr);
+                            is_connecred = true;
+                            continue;
+                        }
+
+                        if data == control::KEEPALIVE_PACKET {
+                            trace!("Keepalive arrives and reset keepalive_elasped_time");
+                            keeplive_elapsed_time = 0;
+                            continue;
+                        }
+
+                        warn!("Warning: unknown control packet: {:?}", data);
                         continue;
                     }
 
@@ -206,17 +222,34 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
             _ = interval.tick() => {
                 tick += 1;
 
-                if tick % control::KEEPALIVE_INTERVAL == 0 {
-                    trace!("send keepalive({:?})", tick);
-                    let _ = socket.send(control::KEEPALIVE_PACKET).await;
+                if is_connecred == false {
+                    if tick % control::HELLO_INTERVAL == 0 {
+                        error!("no hello response from server -> send hello again to {:?}", remote_addr);
+                        let _ = socket.send(control::HELLO_PACKET).await;
+                    }
+
+                    hello_elapsed_time += 1;
+
+                    // keepalive timeout. exit
+                    if hello_elapsed_time > control::HELLO_TIMEOUT {
+                        info!("Hello timeout! - {:?}", remote_addr);
+                        info!("Bye!");
+                        break;
+                    }
                 }
+                else {
+                    if tick % control::KEEPALIVE_INTERVAL == 0 {
+                        trace!("send keepalive({:?})", tick);
+                        let _ = socket.send(control::KEEPALIVE_PACKET).await;
+                    }
 
-                keeplive_elapsed_time += 1;
+                    keeplive_elapsed_time += 1;
 
-                // keepalive timeout. exit
-                if keeplive_elapsed_time > control::KEEPALIVE_TIMEOUT {
-                    info!("Keepalive timeout - Bye!");
-                    break;
+                    // keepalive timeout. exit
+                    if keeplive_elapsed_time > control::KEEPALIVE_TIMEOUT {
+                        info!("Keepalive timeout - Bye!");
+                        break;
+                    }
                 }
             },
             _ = signal::ctrl_c() => {
@@ -229,7 +262,7 @@ pub async fn client(server_address: &str, tap_name: &str, mac: MacAddress, tap_n
             }
         }
     }
-    info!("client exit");
+    info!("client exits");
     Ok(())
 }
 

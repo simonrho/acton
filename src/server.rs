@@ -259,6 +259,7 @@ pub async fn server(listen_addr: &str, tap_name: &str, mac: MacAddress, tap_netw
                         if data == control::HELLO_PACKET {
                             info!("HELLO_PACKET arrives: {:?}", remote_addr);
                             ft.update_or_insert_nexthop(&remote_addr);
+                            let _ = socket.send_to(control::HELLO_PACKET, remote_addr).await;
                             continue;
                         }
 

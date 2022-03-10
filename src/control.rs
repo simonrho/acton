@@ -32,6 +32,10 @@ pub const KEEPALIVE_TIMEOUT: u64 = 30;
 pub const KEEPALIVE_INTERVAL: u64 = 10;
 /// Session keepalive control packet data
 pub const KEEPALIVE_PACKET: &[u8] = "KEEPALIVE".as_bytes();
+/// Session hello timeout
+pub const HELLO_TIMEOUT: u64 = 180;
+/// Session hello interval
+pub const HELLO_INTERVAL: u64 = 3;
 /// Session hello control packet data for client registration
 pub const HELLO_PACKET: &[u8] = "HELLO".as_bytes();
 /// Session bye control packet data for client registration
